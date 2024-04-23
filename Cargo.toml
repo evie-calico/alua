@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 description = "A Rust library for generating lua lsp annotations from Rust types"
 repository = "https://github.com/eievui5/alua"
-licnese-file = "LICENSE"
+license-file = "LICENSE"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
