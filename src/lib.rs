@@ -46,7 +46,7 @@ integer!(u8, u16, u32, i8, i16, i32, i64);
 
 simple!(f32, "number");
 simple!(f64, "number");
-simple!(bool, "bool");
+simple!(bool, "boolean");
 simple!(String, "string");
 
 pass!(Rc<T>);
