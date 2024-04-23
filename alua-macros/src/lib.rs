@@ -8,7 +8,7 @@ struct ClassAnnotationArgs {
     data: ast::Data<(), ClassAnnotationFieldArgs>,
 
     #[darling(default)]
-    functions: Vec<LitStr>,
+    fields: Vec<LitStr>,
 }
 
 #[derive(Debug, FromField)]
@@ -66,7 +66,7 @@ pub fn environment(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
         }
         documentation
     });
-    let methods = args.functions;
+    let manual_fields = args.fields;
 
     // Build the output, possibly using quasi-quotation
     let expanded = quote! {
@@ -84,7 +84,7 @@ pub fn environment(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
                     let _ = writeln!(out,"--- @field {} {} -{}", stringify!(#identifiers), #types, #docs);
                 )*
                 #(
-                    let _ = writeln!(out, "--- @method {}", #methods);
+                    let _ = writeln!(out, "--- @field {}", #manual_fields);
                 )*
                 out
             }
