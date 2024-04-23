@@ -9,10 +9,7 @@ use alua::*;
 
 #[derive(ClassAnnotation)]
 #[alua(fields = [
-    "find_code_references fun(code string) CodeReferenceWithDocument[]",
-    "find_discrete_values fun(unique_id string) DiscreteValue[]",
-    "find_medications fun(external_id string) Medication[]",
-    "find_documents fun(document_id string) CACDocument[]",
+    "method fun(self: Example, message: string) - Send a message",
 ])]
 struct Example {
     /// test
@@ -30,8 +27,5 @@ This produces the following output:
 ```lua
 --- @class Example
 --- @field field integer - test
---- @field find_code_references fun(code string) CodeReferenceWithDocument[]
---- @field find_discrete_values fun(unique_id string) DiscreteValue[]
---- @field find_medications fun(external_id string) Medication[]
---- @field find_documents fun(document_id string) CACDocument[]
+--- @field method fun(self: Example, message: string) - Send a message
 ```
