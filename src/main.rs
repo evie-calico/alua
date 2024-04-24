@@ -1,4 +1,4 @@
-use alua::*;
+use alua::ClassAnnotation;
 use std::borrow::Cow;
 use std::collections::{HashMap, HashSet};
 use std::ffi::{CStr, CString};
