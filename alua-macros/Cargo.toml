@@ -6,7 +6,8 @@ description = "Proc macros for alua"
 repository = "https://github.com/eievui5/alua"
 license = "MIT"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[features]
+userdata = []
 
 [dependencies]
 darling = "0.20.3"
