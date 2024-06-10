@@ -1,6 +1,6 @@
 [package]
 name = "alua"
-version = "0.1.3"
+version = "0.1.4"
 edition = "2021"
 description = "A Rust library for generating lua lsp annotations from Rust types"
 repository = "https://github.com/eievui5/alua"
