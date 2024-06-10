@@ -5,12 +5,21 @@ use std::ffi::{CStr, CString};
 use std::rc::Rc;
 use std::sync::Arc;
 
+#[cfg(feature = "userdata")]
+fn send(_lua: &mlua::Lua, _this: &mut Example, message: String) -> mlua::Result<()> {
+    println!("-- {message}");
+    Ok(())
+}
+
 #[derive(Default, ClassAnnotation)]
 #[cfg_attr(feature = "userdata", derive(alua_macros::UserData))]
 // This is the only way to expose methods.
-#[alua(fields = [
-    "method fun(self: Example, message: string) - Send a message",
-])]
+#[alua(
+    fields = [
+        "send fun(self: Example, message: string) - Send a message",
+    ],
+    method = send
+)]
 #[allow(unused)]
 struct Example {
     /// Example docs
@@ -98,6 +107,7 @@ fn main() {
             print("-- u32_integer: "..Example.u32_integer)
             print("-- string: \""..Example.string.."\"")
             print("-- type of retyped value: "..type(Example.retyped_u8_integer))
+            Example:send("Method call");
         })
         .exec()
         .unwrap();

@@ -1,4 +1,5 @@
 use darling::{ast, FromDeriveInput, FromField};
+
 use quote::quote;
 use syn::*;
 
@@ -9,6 +10,9 @@ struct ClassAnnotationArgs {
 
     #[darling(default)]
     fields: Vec<LitStr>,
+    #[cfg(feature = "userdata")]
+    #[darling(default, multiple)]
+    method: Vec<Ident>,
 }
 
 #[derive(Debug, FromField)]
@@ -43,8 +47,10 @@ pub fn userdata(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     };
 
     let name = input.ident;
-    let arg_fields = args.data.as_ref().take_struct().unwrap().fields;
+    let args_struct = args.data.as_ref().take_struct().unwrap();
+    let arg_fields = args_struct.fields;
     let fields = arg_fields.iter().filter(|x| !x.skip);
+    let methods = args.method;
 
     let getters = fields.clone().filter(|x| x.get).map(|x| &x.ident);
     let getter_methods = fields.clone().filter(|x| x.get).map(|x| {
@@ -71,6 +77,11 @@ pub fn userdata(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
                         this.#setters = value;
                         Ok(())
                     });
+                )*
+            }
+            fn add_methods<'lua, M: mlua::UserDataMethods<'lua, Self>>(methods: &mut M) {
+                #(
+                    methods.add_method_mut(stringify!(#methods), #methods);
                 )*
             }
         }
