@@ -1,6 +1,6 @@
 [package]
 name = "alua"
-version = "0.1.4"
+version = "0.1.5"
 edition = "2021"
 description = "A Rust library for generating lua lsp annotations from Rust types"
 repository = "https://github.com/eievui5/alua"
@@ -11,9 +11,11 @@ name = "usage"
 
 [features]
 userdata = ["alua-macros/userdata"]
+arrayvec = ["dep:arrayvec"]
 
 [dependencies]
 alua-macros = { version = "0.1.1", path = "alua-macros" }
+arrayvec = { version = "0.7.6", optional = true }
 
 [dev-dependencies]
 mlua = { version = "0.9.7", features = ["luajit", "macros"] }

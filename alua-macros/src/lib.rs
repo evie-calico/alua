@@ -138,8 +138,8 @@ pub fn class_annotation(input: proc_macro::TokenStream) -> proc_macro::TokenStre
     // Build the output, possibly using quasi-quotation
     let expanded = quote! {
         impl ::alua::TypeAnnotation for #name {
-            fn lua_type() -> String {
-                stringify!(#name).into()
+            fn lua_type() -> ::std::borrow::Cow<'static, str> {
+                ::std::borrow::Cow::Borrowed(stringify!(#name))
             }
         }
         impl ::alua::ClassAnnotation for #name {

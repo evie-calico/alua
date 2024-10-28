@@ -3,10 +3,13 @@ use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 use std::ffi::{CStr, CString};
 use std::{rc::Rc, sync::Arc};
 
+#[cfg(feature = "arrayvec")]
+mod arrayvec;
+
 pub use alua_macros::*;
 
 pub trait TypeAnnotation {
-    fn lua_type() -> String;
+    fn lua_type() -> Cow<'static, str>;
 }
 
 pub trait ClassAnnotation {
@@ -17,8 +20,8 @@ pub trait ClassAnnotation {
 macro_rules! simple {
     ($ident:ty, $name:expr) => {
         impl TypeAnnotation for $ident {
-            fn lua_type() -> String {
-                String::from($name)
+            fn lua_type() -> Cow<'static, str> {
+                Cow::Borrowed($name)
             }
         }
     };
@@ -28,7 +31,7 @@ macro_rules! simple {
 macro_rules! suffix {
     ($ident:ty, $name:expr) => {
         impl<T: TypeAnnotation> TypeAnnotation for $ident {
-            fn lua_type() -> String {
+            fn lua_type() -> Cow<'static, str> {
                 T::lua_type() + $name
             }
         }
@@ -39,7 +42,7 @@ macro_rules! suffix {
 macro_rules! pass {
     ($ident:ty) => {
         impl<T: TypeAnnotation> TypeAnnotation for $ident{
-            fn lua_type() -> String {
+            fn lua_type() -> Cow<'static, str> {
                 T::lua_type()
             }
         }
@@ -90,43 +93,43 @@ suffix!([T], "[]");
 suffix!(&[T], "[]");
 
 impl<K: TypeAnnotation, V: TypeAnnotation> TypeAnnotation for HashMap<K, V> {
-    fn lua_type() -> String {
-        format!("table<{}, {}>", K::lua_type(), V::lua_type())
+    fn lua_type() -> Cow<'static, str> {
+        format!("table<{}, {}>", K::lua_type(), V::lua_type()).into()
     }
 }
 
 impl<K: TypeAnnotation, V: TypeAnnotation> TypeAnnotation for BTreeMap<K, V> {
-    fn lua_type() -> String {
-        format!("table<{}, {}>", K::lua_type(), V::lua_type())
+    fn lua_type() -> Cow<'static, str> {
+        format!("table<{}, {}>", K::lua_type(), V::lua_type()).into()
     }
 }
 
 impl<T: TypeAnnotation> TypeAnnotation for HashSet<T> {
-    fn lua_type() -> String {
-        format!("table<{}, bool>", T::lua_type())
+    fn lua_type() -> Cow<'static, str> {
+        format!("table<{}, bool>", T::lua_type()).into()
     }
 }
 
 impl<T: TypeAnnotation> TypeAnnotation for BTreeSet<T> {
-    fn lua_type() -> String {
-        format!("table<{}, bool>", T::lua_type())
+    fn lua_type() -> Cow<'static, str> {
+        format!("table<{}, bool>", T::lua_type()).into()
     }
 }
 
 impl<T: TypeAnnotation + Clone> TypeAnnotation for Cow<'_, T> {
-    fn lua_type() -> String {
+    fn lua_type() -> Cow<'static, str> {
         T::lua_type()
     }
 }
 
 impl TypeAnnotation for Cow<'_, str> {
-    fn lua_type() -> String {
+    fn lua_type() -> Cow<'static, str> {
         str::lua_type()
     }
 }
 
 impl<T: TypeAnnotation, const N: usize> TypeAnnotation for [T; N] {
-    fn lua_type() -> String {
+    fn lua_type() -> Cow<'static, str> {
         T::lua_type() + "[]"
     }
 }
