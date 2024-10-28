@@ -78,7 +78,7 @@ pub fn userdata(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
 
     let expanded = quote! {
         impl ::mlua::UserData for #name {
-            fn add_fields<'lua, F: ::mlua::UserDataFields<'lua, Self>>(fields: &mut F) {
+            fn add_fields<F: ::mlua::UserDataFields<Self>>(fields: &mut F) {
                 #(
                     fields.add_field_method_get(stringify!(#getters), |_, this| Ok(#getter_methods));
                 )*
@@ -89,7 +89,7 @@ pub fn userdata(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
                     });
                 )*
             }
-            fn add_methods<'lua, M: mlua::UserDataMethods<'lua, Self>>(methods: &mut M) {
+            fn add_methods<M: mlua::UserDataMethods<Self>>(methods: &mut M) {
                 #(
                     methods.add_method_mut(stringify!(#methods), #methods);
                 )*
