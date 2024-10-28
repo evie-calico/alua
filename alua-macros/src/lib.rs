@@ -1,18 +1,28 @@
-use darling::{ast, FromDeriveInput, FromField};
+use darling::{ast, FromDeriveInput, FromField, FromVariant};
 
 use quote::quote;
 use syn::*;
 
 #[derive(Debug, FromDeriveInput)]
-#[darling(attributes(alua), supports(struct_named))]
+#[darling(attributes(alua), supports(struct_named, enum_unit))]
 struct ClassAnnotationArgs {
-    data: ast::Data<(), ClassAnnotationFieldArgs>,
+    data: ast::Data<ClassAnnotationVariantArgs, ClassAnnotationFieldArgs>,
 
     #[darling(default)]
     fields: Vec<LitStr>,
     #[cfg(feature = "userdata")]
     #[darling(default, multiple)]
     method: Vec<Ident>,
+}
+
+#[derive(Debug, FromVariant)]
+#[darling(attributes(alua))]
+struct ClassAnnotationVariantArgs {
+    ident: syn::Ident,
+
+    #[darling(default)]
+    skip: bool,
+    as_lua: Option<LitStr>,
 }
 
 #[derive(Debug, FromField)]
@@ -103,61 +113,95 @@ pub fn class_annotation(input: proc_macro::TokenStream) -> proc_macro::TokenStre
     };
 
     let name = input.ident;
-    let arg_fields = args.data.as_ref().take_struct().unwrap().fields;
-    let fields = arg_fields.iter().filter(|x| !x.skip);
-    let identifiers = fields.clone().map(|x| &x.ident);
-    let types = fields.clone().map(|x| {
-        if let Some(as_lua) = &x.as_lua {
-            quote!(#as_lua)
-        } else {
-            let ty = &x.ty;
-            quote!(<#ty as ::alua::TypeAnnotation>::lua_type())
-        }
-    });
-    let docs = fields.clone().map(|x| {
-        let mut documentation = String::new();
-        for i in &x.attrs {
-            if let Meta::NameValue(i) = &i.meta {
-                if let Some(ident) = i.path.get_ident() {
-                    if ident.to_string() == "doc" {
-                        if let Expr::Lit(ExprLit {
-                            attrs: _,
-                            lit: Lit::Str(s),
-                        }) = &i.value
-                        {
-                            documentation += &s.value();
+    match args.data.as_ref() {
+        ast::Data::Struct(arg_fields) => {
+            let fields = arg_fields.iter().filter(|x| !x.skip);
+            let identifiers = fields.clone().map(|x| &x.ident);
+            let types = fields.clone().map(|x| {
+                if let Some(as_lua) = &x.as_lua {
+                    quote!(#as_lua)
+                } else {
+                    let ty = &x.ty;
+                    quote!(<#ty as ::alua::TypeAnnotation>::lua_type())
+                }
+            });
+            let docs = fields.clone().map(|x| {
+                let mut documentation = String::new();
+                for i in &x.attrs {
+                    if let Meta::NameValue(i) = &i.meta {
+                        if let Some(ident) = i.path.get_ident() {
+                            if ident.to_string() == "doc" {
+                                if let Expr::Lit(ExprLit {
+                                    attrs: _,
+                                    lit: Lit::Str(s),
+                                }) = &i.value
+                                {
+                                    documentation += &s.value();
+                                }
+                            }
                         }
                     }
                 }
-            }
-        }
-        documentation
-    });
-    let manual_fields = args.fields;
+                documentation
+            });
+            let manual_fields = args.fields;
 
-    // Build the output, possibly using quasi-quotation
-    let expanded = quote! {
-        impl ::alua::TypeAnnotation for #name {
-            fn lua_type() -> ::std::borrow::Cow<'static, str> {
-                ::std::borrow::Cow::Borrowed(stringify!(#name))
-            }
-        }
-        impl ::alua::ClassAnnotation for #name {
-            fn class_annotation() -> String {
-                use ::std::fmt::Write;
-                let mut out = String::new();
-                let _ = writeln!(out,"--- @class {}", stringify!(#name));
-                #(
-                    let _ = writeln!(out,"--- @field {} {} -{}", stringify!(#identifiers), #types, #docs);
-                )*
-                #(
-                    let _ = writeln!(out, "--- @field {}", #manual_fields);
-                )*
-                out
-            }
-        }
-    };
+            // Build the output, possibly using quasi-quotation
+            let expanded = quote! {
+                impl ::alua::TypeAnnotation for #name {
+                    fn lua_type() -> ::std::borrow::Cow<'static, str> {
+                        ::std::borrow::Cow::Borrowed(stringify!(#name))
+                    }
+                }
+                impl ::alua::ClassAnnotation for #name {
+                    fn class_annotation() -> String {
+                        use ::std::fmt::Write;
+                        let mut out = String::new();
+                        let _ = writeln!(out,"--- @class {}", stringify!(#name));
+                        #(
+                            let _ = writeln!(out,"--- @field {} {} -{}", stringify!(#identifiers), #types, #docs);
+                        )*
+                        #(
+                            let _ = writeln!(out, "--- @field {}", #manual_fields);
+                        )*
+                        out
+                    }
+                }
+            };
 
-    // Hand the output tokens back to the compiler
-    expanded.into()
+            expanded.into()
+        }
+        ast::Data::Enum(variants) => {
+            let mut variant_names = variants.iter().filter(|x| !x.skip).map(|x| {
+                if let Some(as_lua) = &x.as_lua {
+                    quote!(#as_lua)
+                } else {
+                    let ident = &x.ident;
+                    quote!(#ident)
+                }
+            });
+            let first_variant = variant_names.next().unwrap();
+            let expanded = quote! {
+                impl ::alua::TypeAnnotation for #name {
+                    fn lua_type() -> ::std::borrow::Cow<'static, str> {
+                        ::std::borrow::Cow::Borrowed(stringify!(#name))
+                    }
+                }
+                impl ::alua::ClassAnnotation for #name {
+                    fn class_annotation() -> String {
+                        use ::std::fmt::Write;
+                        let mut out = String::new();
+                        let _ = write!(out, "--- @alias {} \"{}\"", stringify!(#name), stringify!(#first_variant));
+                        #(
+                            let _ = write!(out, " | \"{}\"", stringify!(#variant_names));
+                        )*
+                        let _ = writeln!(out);
+                        out
+                    }
+                }
+            };
+
+            expanded.into()
+        }
+    }
 }

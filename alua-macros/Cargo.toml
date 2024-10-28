@@ -1,6 +1,6 @@
 [package]
 name = "alua-macros"
-version = "0.1.3"
+version = "0.1.4"
 edition = "2021"
 description = "Proc macros for alua"
 repository = "https://github.com/eievui5/alua"

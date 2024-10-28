@@ -11,17 +11,33 @@ fn send(_lua: &mlua::Lua, _this: &mut Example, message: String) -> mlua::Result<
     Ok(())
 }
 
+// Unit enums can derive a "class annotation" that creates an alias for various string values.
+// This may be useful for serde-based interop, rather than userdata.
+// Enums have no derivable userdata, nor class annotations for a userdata implementation.
+#[derive(Default, Clone, ClassAnnotation)]
+#[allow(unused)]
+enum ExampleVariant {
+    #[default]
+    One,
+    Two,
+    #[alua(skip)]
+    Three,
+    Four,
+}
+
 #[derive(Default, ClassAnnotation)]
 #[cfg_attr(feature = "userdata", derive(alua_macros::UserData))]
+#[cfg_attr(feature = "userdata", alua(method = send))]
 // This is the only way to expose methods.
 #[alua(
     fields = [
         "send fun(self: Example, message: string) - Send a message",
     ],
-    method = send
 )]
 #[allow(unused)]
 struct Example {
+    /// Example docs
+    variant: ExampleVariant,
     /// Example docs
     #[cfg_attr(feature = "userdata", alua(get))]
     #[alua(as_lua = "string?")]
@@ -83,6 +99,7 @@ struct Example {
 }
 
 fn main() {
+    println!("{}", ExampleVariant::class_annotation());
     print!("{}", Example::class_annotation());
 
     #[cfg(feature = "userdata")]
